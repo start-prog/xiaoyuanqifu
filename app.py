@@ -72,6 +72,13 @@ BASE_HTML = '''
             min-height: 300px;
             line-height: 1.8;
         }
+        .logout-btn {
+            background: #ef4444;
+            margin-top: 10px;
+        }
+        .logout-btn:hover {
+            background: #dc2626;
+        }
     </style>
 </head>
 <body>
@@ -96,6 +103,12 @@ def index():
         </div>
         '''
     )
+
+# ✅ 退出登录（清空session → 返回首页）
+@app.route('/logout')
+def logout():
+    session.clear()  # 清空登录状态
+    return redirect('/')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -133,6 +146,7 @@ def student_home():
         <div class="glass-card">
             <div class="btn-group">
                 <a href="/send_sos" class="btn" style="background: #ef4444;">🚨 一键求助</a>
+                <a href="/" class="btn">🏠 返回首页</a>
             </div>
         </div>
         '''
@@ -170,6 +184,7 @@ def report():
                 <textarea name="content" rows="6" placeholder="请描述事件经过" required></textarea>
                 <button type="submit" class="btn">提交举报</button>
             </form>
+            <a href="/student" class="btn">← 返回</a>
         </div>
         '''
     )
@@ -200,6 +215,7 @@ def knowledge():
             三、重要提醒<br>
             遇到欺凌不要沉默！求助不是懦弱，是勇敢！
         </div>
+        <a href="/student" class="btn">← 返回学生中心</a>
         '''
     )
 
@@ -217,6 +233,8 @@ def manage():
         <div class="glass-card content">
             暂无记录（演示版）
         </div>
+        <!-- ✅ 退出登录按钮 -->
+        <a href="/logout" class="btn logout-btn">🚪 退出登录 → 返回首页</a>
         '''
     )
 
