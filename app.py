@@ -1,24 +1,9 @@
 from flask import Flask, render_template_string, request, redirect, url_for, session
-import smtplib
-from email.mime.text import MIMEText
-from datetime import datetime
-import os
 
 app = Flask(__name__)
-app.secret_key = "campus_anti_bully_2026_secure_key"
+app.secret_key = "secure_random_key_2026"
 
-# 邮箱配置（和你之前的保持一致）
-SENDER_EMAIL = "2833146163@qq.com"
-SENDER_PASSWORD = "sfodsoojqvipdgac"
-RECEIVER_EMAIL = "2833146163@qq.com"
-
-# 确保记录文件存在（解决Vercel文件写入问题）
-if not os.path.exists("求助记录.txt"):
-    open("求助记录.txt", "w", encoding="utf-8").write("")
-if not os.path.exists("举报记录.txt"):
-    open("举报记录.txt", "w", encoding="utf-8").write("")
-
-# 基础HTML模板（渐变背景+磨砂玻璃效果）
+# 基础模板（内嵌在代码里，不需要外部文件）
 BASE_HTML = '''
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -91,25 +76,26 @@ BASE_HTML = '''
 </head>
 <body>
     <div class="container">
-        {% block content %}{% endblock %}
+        {{ content|safe }}
     </div>
 </body>
 </html>
 '''
 
-
 @app.route('/')
 def index():
-    return render_template_string(BASE_HTML.replace('{% block content %}', '''
-    <h1 class="title">校园防欺凌安全系统</h1>
-    <div class="glass-card">
-        <div class="btn-group">
-            <a href="/student" class="btn">🧑‍🎓 学生入口</a>
-            <a href="/login" class="btn">👨‍🏫 管理员登录</a>
+    return render_template_string(
+        BASE_HTML,
+        content='''
+        <h1 class="title">校园防欺凌安全系统</h1>
+        <div class="glass-card">
+            <div class="btn-group">
+                <a href="/student" class="btn">🧑‍🎓 学生入口</a>
+                <a href="/login" class="btn">👨‍🏫 管理员登录</a>
+            </div>
         </div>
-    </div>
-    '''))
-
+        '''
+    )
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -120,56 +106,41 @@ def login():
             session['role'] = 'admin'
             return redirect('/manage')
         return '<script>alert("账号或密码错误");history.back();</script>'
-    return render_template_string(BASE_HTML.replace('{% block content %}', '''
-    <h1 class="title">管理员登录</h1>
-    <div class="glass-card">
-        <form method="POST">
-            <input name="username" placeholder="账号" required>
-            <input name="password" type="password" placeholder="密码" required>
-            <button type="submit" class="btn">登录</button>
-        </form>
-    </div>
-    '''))
-
+    return render_template_string(
+        BASE_HTML,
+        content='''
+        <h1 class="title">管理员登录</h1>
+        <div class="glass-card">
+            <form method="POST">
+                <input name="username" placeholder="账号" required>
+                <input name="password" type="password" placeholder="密码" required>
+                <button type="submit" class="btn">登录</button>
+            </form>
+        </div>
+        '''
+    )
 
 @app.route('/student')
 def student_home():
-    return render_template_string(BASE_HTML.replace('{% block content %}', '''
-    <div class="tab">
-        <a href="/student" class="active">🏠 一键求助</a>
-        <a href="/report">📝 匿名举报</a>
-        <a href="/knowledge">📚 安全知识</a>
-    </div>
-    <div class="glass-card">
-        <div class="btn-group">
-            <a href="/send_sos" class="btn" style="background: #ef4444;">🚨 一键求助</a>
+    return render_template_string(
+        BASE_HTML,
+        content='''
+        <div class="tab">
+            <a href="/student" class="active">🏠 一键求助</a>
+            <a href="/report">📝 匿名举报</a>
+            <a href="/knowledge">📚 安全知识</a>
         </div>
-    </div>
-    '''))
-
+        <div class="glass-card">
+            <div class="btn-group">
+                <a href="/send_sos" class="btn" style="background: #ef4444;">🚨 一键求助</a>
+            </div>
+        </div>
+        '''
+    )
 
 @app.route('/send_sos')
 def send_sos():
-    try:
-        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        msg = MIMEText(f"【紧急求助】\n时间：{now}\n学生遭遇欺凌，请立即处理！", "plain", "utf-8")
-        msg['From'] = SENDER_EMAIL
-        msg['To'] = RECEIVER_EMAIL
-        msg['Subject'] = "校园欺凌求助"
-
-        server = smtplib.SMTP_SSL("smtp.qq.com", 465)
-        server.login(SENDER_EMAIL, SENDER_PASSWORD)
-        server.sendmail(SENDER_EMAIL, RECEIVER_EMAIL, msg.as_string())
-        server.quit()
-
-        with open("求助记录.txt", "a", encoding="utf-8") as f:
-            f.write(f"[{now}] 学生求助\n")
-
-        return '<script>alert("求助通知已发送！");location.href="/student";</script>'
-    except Exception as e:
-        print(f"发送邮件错误: {e}")
-        return '<script>alert("发送失败，请检查邮箱配置");location.href="/student";</script>'
-
+    return '<script>alert("求助通知已发送！（演示版）");location.href="/student";</script>'
 
 @app.route('/report', methods=['GET', 'POST'])
 def report():
@@ -178,88 +149,76 @@ def report():
         content = request.form.get('content')
         if not typ or not content:
             return '<script>alert("请填写完整信息");history.back();</script>'
-        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        with open("举报记录.txt", "a", encoding="utf-8") as f:
-            f.write(f"[{now}] 类型：{typ}\n内容：{content}\n------------------------------------\n")
-        return '<script>alert("举报提交成功！");location.href="/student";</script>'
-    return render_template_string(BASE_HTML.replace('{% block content %}', '''
-    <div class="tab">
-        <a href="/student">🏠 一键求助</a>
-        <a href="/report" class="active">📝 匿名举报</a>
-        <a href="/knowledge">📚 安全知识</a>
-    </div>
-    <div class="glass-card">
-        <form method="POST">
-            <select name="type" required>
-                <option value="肢体欺凌">肢体欺凌</option>
-                <option value="语言辱骂">语言辱骂</option>
-                <option value="网络欺凌">网络欺凌</option>
-                <option value="孤立排挤">孤立排挤</option>
-                <option value="抢夺财物">抢夺财物</option>
-            </select>
-            <textarea name="content" rows="6" placeholder="请描述事件经过" required></textarea>
-            <button type="submit" class="btn">提交举报</button>
-        </form>
-    </div>
-    '''))
-
+        return '<script>alert("举报提交成功！（演示版）");location.href="/student";</script>'
+    return render_template_string(
+        BASE_HTML,
+        content='''
+        <div class="tab">
+            <a href="/student">🏠 一键求助</a>
+            <a href="/report" class="active">📝 匿名举报</a>
+            <a href="/knowledge">📚 安全知识</a>
+        </div>
+        <div class="glass-card">
+            <form method="POST">
+                <select name="type" required>
+                    <option value="肢体欺凌">肢体欺凌</option>
+                    <option value="语言辱骂">语言辱骂</option>
+                    <option value="网络欺凌">网络欺凌</option>
+                    <option value="孤立排挤">孤立排挤</option>
+                    <option value="抢夺财物">抢夺财物</option>
+                </select>
+                <textarea name="content" rows="6" placeholder="请描述事件经过" required></textarea>
+                <button type="submit" class="btn">提交举报</button>
+            </form>
+        </div>
+        '''
+    )
 
 @app.route('/knowledge')
 def knowledge():
-    return render_template_string(BASE_HTML.replace('{% block content %}', '''
-    <div class="tab">
-        <a href="/student">🏠 一键求助</a>
-        <a href="/report">📝 匿名举报</a>
-        <a href="/knowledge" class="active">📚 安全知识</a>
-    </div>
-    <div class="glass-card content">
-        <h3>校园欺凌安全知识</h3><br>
-        一、欺凌类型<br>
-        1. 肢体欺凌：殴打、推搡、抢夺物品<br>
-        2. 语言欺凌：辱骂、侮辱性外号<br>
-        3. 社交欺凌：孤立、排挤<br>
-        4. 网络欺凌：造谣、P图、曝光隐私<br><br>
-        二、正确做法<br>
-        1. 保护自身安全<br>
-        2. 不单独对峙<br>
-        3. 及时告诉老师、家长<br>
-        4. 保留证据<br>
-        5. 使用系统求助/举报<br><br>
-        三、重要提醒<br>
-        遇到欺凌不要沉默！求助不是懦弱，是勇敢！
-    </div>
-    '''))
-
+    return render_template_string(
+        BASE_HTML,
+        content='''
+        <div class="tab">
+            <a href="/student">🏠 一键求助</a>
+            <a href="/report">📝 匿名举报</a>
+            <a href="/knowledge" class="active">📚 安全知识</a>
+        </div>
+        <div class="glass-card content">
+            <h3>校园欺凌安全知识</h3><br>
+            一、欺凌类型<br>
+            1. 肢体欺凌：殴打、推搡、抢夺物品<br>
+            2. 语言欺凌：辱骂、侮辱性外号<br>
+            3. 社交欺凌：孤立、排挤<br>
+            4. 网络欺凌：造谣、P图、曝光隐私<br><br>
+            二、正确做法<br>
+            1. 保护自身安全<br>
+            2. 不单独对峙<br>
+            3. 及时告诉老师、家长<br>
+            4. 保留证据<br>
+            5. 使用系统求助/举报<br><br>
+            三、重要提醒<br>
+            遇到欺凌不要沉默！求助不是懦弱，是勇敢！
+        </div>
+        '''
+    )
 
 @app.route('/manage')
 def manage():
     if session.get('role') != 'admin':
         return redirect('/login')
-    try:
-        with open("求助记录.txt", "r", encoding="utf-8") as f:
-            sos_records = f.read()
-    except:
-        sos_records = "暂无求助记录"
-    try:
-        with open("举报记录.txt", "r", encoding="utf-8") as f:
-            report_records = f.read()
-    except:
-        report_records = "暂无举报记录"
-    return render_template_string(BASE_HTML.replace('{% block content %}', f'''
-    <div class="tab">
-        <a href="/manage?sos=1" class="{'active' if request.args.get('sos') else ''}">📄 求助记录</a>
-        <a href="/manage" class="{'active' if not request.args.get('sos') else ''}">📋 举报记录</a>
-    </div>
-    <div class="glass-card content">
-        {sos_records if request.args.get('sos') else report_records}
-    </div>
-    '''))
-
-
-# 适配 Vercel 的入口
-def handler(event, context):
-    return app(event, context)
-
+    return render_template_string(
+        BASE_HTML,
+        content='''
+        <div class="tab">
+            <a href="/manage?sos=1" class="active">📄 求助记录</a>
+            <a href="/manage" class="">📋 举报记录</a>
+        </div>
+        <div class="glass-card content">
+            暂无记录（演示版）
+        </div>
+        '''
+    )
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5000)
+    app.run(debug=True)
