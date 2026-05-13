@@ -2,16 +2,23 @@ from flask import Flask, render_template_string, request, redirect, url_for, ses
 import smtplib
 from email.mime.text import MIMEText
 from datetime import datetime
+import os
 
 app = Flask(__name__)
-app.secret_key = "campus_anti_bully_2026_secret_888"
+app.secret_key = "campus_anti_bully_2026_secure_key"
 
-# 邮箱配置（和之前保持一致）
+# 邮箱配置（和你之前的保持一致）
 SENDER_EMAIL = "2833146163@qq.com"
 SENDER_PASSWORD = "sfodsoojqvipdgac"
 RECEIVER_EMAIL = "2833146163@qq.com"
 
-# 基础HTML模板（带渐变背景和磨砂玻璃效果）
+# 确保记录文件存在（解决Vercel文件写入问题）
+if not os.path.exists("求助记录.txt"):
+    open("求助记录.txt", "w", encoding="utf-8").write("")
+if not os.path.exists("举报记录.txt"):
+    open("举报记录.txt", "w", encoding="utf-8").write("")
+
+# 基础HTML模板（渐变背景+磨砂玻璃效果）
 BASE_HTML = '''
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -159,7 +166,8 @@ def send_sos():
             f.write(f"[{now}] 学生求助\n")
 
         return '<script>alert("求助通知已发送！");location.href="/student";</script>'
-    except:
+    except Exception as e:
+        print(f"发送邮件错误: {e}")
         return '<script>alert("发送失败，请检查邮箱配置");location.href="/student";</script>'
 
 
